@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLASSIFIED_ARCHIVE_D-001</title>
+    <style>
+        :root {
+            --bg-color: #dcd7c9;
+            --paper-color: #f4f1ea;
+            --text-color: #2c2c2c;
+            --accent-color: #8b0000;
+            --border-color: #3d3d3d;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: "Courier New", Courier, monospace;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .document-container {
+            background-color: var(--paper-color);
+            width: 100%;
+            max-width: 900px;
+            padding: 50px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+            border: 1px solid #c4b9a3;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .document-container::before {
+            content: "TOP SECRET";
+            position: absolute;
+            top: 40px;
+            right: -50px;
+            transform: rotate(45deg);
+            color: rgba(139, 0, 0, 0.2);
+            font-size: 4rem;
+            font-weight: bold;
+            pointer-events: none;
+        }
+
+        header {
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin: 0;
+        }
+
+        .meta-info {
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        textarea {
+            background: rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 150px;
+            margin-bottom: 15px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--border-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--accent-color);
+        }
+
+        .output-area {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px dashed var(--border-color);
+            min-height: 50px;
+            word-break: break-all;
+            background: #eeeae0;
+            font-size: 0.9rem;
+        }
+
+        .stamp {
+            border: 3px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 5px 10px;
+            display: inline-block;
+            transform: rotate(-10deg);
+            font-weight: bold;
+            margin-top: 20px;
+            opacity: 0.7;
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .document-container { box-shadow: none; border: none; width: 100%; padding: 20px; }
+            header, .stamp, footer, .section:last-child, label, textarea, .controls { 
+                display: none !important; 
+            }
+            .grid { display: block; }
+            .section { width: 100%; }
+            .output-area { 
+                border: 2px solid #000; 
+                padding: 20px; 
+                background: white; 
+                font-size: 1.2rem;
+            }
+            .output-area::before {
+                content: "ENCRYPTED MESSAGE CONTENT:";
+                display: block;
+                font-weight: bold;
+                margin-bottom: 10px;
+                text-decoration: underline;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document-container">
+    <header>
+        <div class="meta-info">
+            CASE FILE: #99-B21 // CLASSIFIED // SUBJECT: ENCRYPTED COMMUNIQUE<br>
+            DATE: <span id="current-date"></span><br>
+            LOCATION: [REDACTED]
+        </div>
+        <h1>Evidence File</h1>
+    </header>
+
+    <div class="grid">
+        <div class="section">
+            <label>Input Plaintext:</label>
+            <textarea id="text-to-encode" placeholder="Enter text to encrypt..."></textarea>
+            <div class="controls">
+                <button onclick="processEncode()">Code</button>
+                <button onclick="copyToClipboard('encoded-output')">Copy</button>
+                <button onclick="downloadPDF()">PDF</button>
+            </div>
+            <div class="output-area" id="encoded-output">...waiting for input...</div>
+        </div>
+
+        <div class="section">
+            <label>Input Ciphertext:</label>
+            <textarea id="text-to-decode" placeholder="Paste encrypted code..."></textarea>
+            <div class="controls">
+                <button onclick="processDecode()">Decode</button>
+                <button onclick="copyToClipboard('decoded-output')">Copy</button>
+            </div>
+            <div class="output-area" id="decoded-output">...waiting for input...</div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="stamp">INTERNAL USE ONLY</div>
+        <p style="font-size: 0.7rem; margin-top: 40px; color: #777;">
+            WARNING: Unauthorized access to this document is punishable by federal law. 
+            All actions are being logged by the central mainframe.
+        </p>
+    </footer>
+</div>
+
+<script>
+    document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+    }).toUpperCase();
+
+    function customEncrypt(text) {
+        if (!text) return "EMPTY_INPUT";
+        let b64 = btoa(unescape(encodeURIComponent(text)));
+        return b64.split('').reverse().join('');
+    }
+
+    function customDecrypt(cipher) {
+        try {
+            let reversed = cipher.split('').reverse().join('');
+            return decodeURIComponent(escape(atob(reversed)));
+        } catch (e) {
+            return "ERROR: INVALID_CIPHERTEXT";
+        }
+    }
+
+    function processEncode() {
+        const input = document.getElementById('text-to-encode').value;
+        const result = customEncrypt(input);
+        document.getElementById('encoded-output').innerText = result;
+    }
+
+    function processDecode() {
+        const input = document.getElementById('text-to-decode').value;
+        const result = customDecrypt(input);
+        document.getElementById('decoded-output').innerText = result;
+    }
+
+    function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        if (text === "...waiting for input...") return;
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Copied to clipboard");
+        });
+    }
+
+    function downloadPDF() {
+        const output = document.getElementById('encoded-output').innerText;
+        if (output === "...waiting for input..." || output === "EMPTY_INPUT") {
+            alert("No data to save");
+            return;
+        }
+        window.print();
+    }
+</script>
+
+</body>
+</html>
